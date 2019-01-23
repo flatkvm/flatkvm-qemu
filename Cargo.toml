@@ -1,0 +1,15 @@
+[package]
+name = "flatkvm-qemu"
+version = "0.1.0"
+authors = ["Sergio Lopez <slp@sinrega.org>"]
+edition = "2018"
+
+[dependencies]
+dbus = "0.6.4"
+qapi = { version = "0.4.0", features = [ "qmp" ] }
+serde = "1.0"
+serde_json = "1.0"
+serde_derive = "1.0"
+shlex = "0.1.1"
+
+x11-clipboard = { git = "https://github.com/flatkvm/x11-clipboard" }
