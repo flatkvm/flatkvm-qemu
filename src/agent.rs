@@ -104,16 +104,16 @@ impl AgentHost {
         }
     }
 
-    pub fn send_message(&mut self, msg: String) -> Result<(), std::io::Error> {
+    pub fn send_message(&mut self, msg: &str) -> Result<(), std::io::Error> {
         self.stream.write_all(msg.as_bytes())?;
-        self.stream.write_all(b"\n")?;
         self.stream.flush()
     }
 
     pub fn send_ack(&mut self) -> Result<(), String> {
         let ack = AgentMessage::AgentAck(AgentAck { status: 0 });
-        let msg = serde_json::to_string(&ack).map_err(|err| err.to_string())?;
-        self.send_message(msg).map_err(|err| err.to_string())
+        let mut msg = serde_json::to_string(&ack).map_err(|err| err.to_string())?;
+        msg.push('\n');
+        self.send_message(&msg).map_err(|err| err.to_string())
     }
 
     pub fn wait_ack(&mut self) -> Result<i32, String> {
@@ -142,14 +142,16 @@ impl AgentHost {
 
     pub fn send_clipboard_event(&mut self, data: String) -> Result<(), String> {
         let cbe = AgentMessage::ClipboardEvent(ClipboardEvent { data });
-        let msg = serde_json::to_string(&cbe).map_err(|err| err.to_string())?;
-        self.send_message(msg).map_err(|err| err.to_string())
+        let mut msg = serde_json::to_string(&cbe).map_err(|err| err.to_string())?;
+        msg.push('\n');
+        self.send_message(&msg).map_err(|err| err.to_string())
     }
 
     pub fn request_mount(&mut self, shared_dir: QemuSharedDir) -> Result<i32, String> {
         let mr = AgentMessage::AgentMountRequest(AgentMountRequest { shared_dir });
-        let msg = serde_json::to_string(&mr).map_err(|err| err.to_string())?;
-        self.send_message(msg).map_err(|err| err.to_string())?;
+        let mut msg = serde_json::to_string(&mr).map_err(|err| err.to_string())?;
+        msg.push('\n');
+        self.send_message(&msg).map_err(|err| err.to_string())?;
         self.wait_ack()
     }
 
@@ -164,8 +166,9 @@ impl AgentHost {
             user,
             dbus_session,
         });
-        let msg = serde_json::to_string(&rr).map_err(|err| err.to_string())?;
-        self.send_message(msg).map_err(|err| err.to_string())?;
+        let mut msg = serde_json::to_string(&rr).map_err(|err| err.to_string())?;
+        msg.push('\n');
+        self.send_message(&msg).map_err(|err| err.to_string())?;
         self.wait_ack()
     }
 
