@@ -18,6 +18,7 @@ use crate::agent::AgentHost;
 use crate::qmpconn::QmpConn;
 use serde_derive::{Deserialize, Serialize};
 use shlex::split;
+use std::env;
 use std::process::{Child, Command, Stdio};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -124,12 +125,18 @@ impl QemuRunner {
     }
 
     pub fn run(&self) -> Result<Child, String> {
-        let mut cmdline = format!("-nodefaults -name {} -machine pc,accel=kvm,kernel_irqchip -cpu host,pmu=off -smp {} -m {}m -drive if=virtio,file={},snapshot=on -kernel {} -append \"root=/dev/vda quiet\" -device virtio-vga -display gtk",
-                              self.name,
-                              self.vcpu_num,
-                              self.ram_mb,
-                              self.template_path,
-                              self.kernel);
+        let uid = match env::var("UID") {
+            Ok(uid) => uid,
+            Err(_) => "1000".to_string(),
+        };
+
+        let mut cmdline = format!("-nodefaults -name {} -machine pc,accel=kvm,kernel_irqchip -cpu host,pmu=off -smp {} -m {}m -drive if=virtio,file={},snapshot=on -kernel {} -append \"root=/dev/vda quiet flatkvm_uid={}\" -device virtio-vga -display gtk",
+                                  self.name,
+                                  self.vcpu_num,
+                                  self.ram_mb,
+                                  self.template_path,
+                                  self.kernel,
+                                  uid);
 
         if let Some(agent_sock_path) = &self.agent_sock_path {
             cmdline.push_str(&format!(" -device virtio-serial -chardev socket,path={},server,id=flatkvm-agent,nowait -device virtserialport,chardev=flatkvm-agent,name=org.flatkvm.port.0", agent_sock_path));
