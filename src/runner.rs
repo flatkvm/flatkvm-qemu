@@ -54,6 +54,7 @@ pub struct QemuRunner {
     qmp_sock_path: Option<String>,
     network: bool,
     audio: bool,
+    virgl: bool,
     shared_dirs: Vec<QemuSharedDir>,
 }
 
@@ -69,6 +70,7 @@ impl QemuRunner {
             qmp_sock_path: None,
             network: true,
             audio: true,
+            virgl: false,
             shared_dirs: Vec::new(),
         }
     }
@@ -108,6 +110,11 @@ impl QemuRunner {
         self
     }
 
+    pub fn virgl(mut self, virgl: bool) -> Self {
+        self.virgl = virgl;
+        self
+    }
+
     pub fn shared_dir(
         mut self,
         dir_type: QemuSharedDirType,
@@ -135,7 +142,7 @@ impl QemuRunner {
             Err(_) => "1000".to_string(),
         };
 
-        let mut cmdline = format!("-nodefaults -name {} -machine pc,accel=kvm,kernel_irqchip -cpu host,pmu=off -smp {} -m {}m -drive if=virtio,file={},snapshot=on -kernel {} -append \"root=/dev/vda quiet net.ifnames=0 flatkvm_uid={}\" -device virtio-vga -display gtk",
+        let mut cmdline = format!("-nodefaults -name {} -machine pc,accel=kvm,kernel_irqchip -cpu host,pmu=off -smp {} -m {}m -drive if=virtio,file={},snapshot=on -kernel {} -append \"root=/dev/vda quiet net.ifnames=0 flatkvm_uid={}\" -device virtio-vga -display",
                                   self.name,
                                   self.vcpu_num,
                                   self.ram_mb,
@@ -143,6 +150,11 @@ impl QemuRunner {
                                   self.kernel,
                                   uid);
 
+        if self.virgl {
+            cmdline.push_str(" gtk,gl=on")
+        } else {
+            cmdline.push_str(" gtk")
+        }
         if let Some(agent_sock_path) = &self.agent_sock_path {
             cmdline.push_str(&format!(" -device virtio-serial -chardev socket,path={},server,id=flatkvm-agent,nowait -device virtserialport,chardev=flatkvm-agent,name=org.flatkvm.port.0", agent_sock_path));
         }
