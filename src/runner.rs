@@ -48,7 +48,7 @@ pub struct QemuRunner {
     name: String,
     vcpu_num: u32,
     ram_mb: u32,
-    template_path: String,
+    template: String,
     kernel: String,
     agent_sock_path: Option<String>,
     qmp_sock_path: Option<String>,
@@ -63,7 +63,7 @@ impl QemuRunner {
             name: name,
             vcpu_num: 1,
             ram_mb: 1024,
-            template_path: "/usr/share/flatkvm/template.qcow2".to_string(),
+            template: "/usr/share/flatkvm/template.qcow2".to_string(),
             kernel: "/usr/share/flatkvm/vmlinuz.flatkvm".to_string(),
             agent_sock_path: None,
             qmp_sock_path: None,
@@ -80,6 +80,11 @@ impl QemuRunner {
 
     pub fn ram_mb(mut self, mb: u32) -> Self {
         self.ram_mb = mb;
+        self
+    }
+
+    pub fn template(mut self, template: String) -> Self {
+        self.template = template;
         self
     }
 
@@ -130,11 +135,11 @@ impl QemuRunner {
             Err(_) => "1000".to_string(),
         };
 
-        let mut cmdline = format!("-nodefaults -name {} -machine pc,accel=kvm,kernel_irqchip -cpu host,pmu=off -smp {} -m {}m -drive if=virtio,file={},snapshot=on -kernel {} -append \"root=/dev/vda quiet flatkvm_uid={}\" -device virtio-vga -display gtk",
+        let mut cmdline = format!("-nodefaults -name {} -machine pc,accel=kvm,kernel_irqchip -cpu host,pmu=off -smp {} -m {}m -drive if=virtio,file={},snapshot=on -kernel {} -append \"root=/dev/vda quiet net.ifnames=0 flatkvm_uid={}\" -device virtio-vga -display gtk",
                                   self.name,
                                   self.vcpu_num,
                                   self.ram_mb,
-                                  self.template_path,
+                                  self.template,
                                   self.kernel,
                                   uid);
 
