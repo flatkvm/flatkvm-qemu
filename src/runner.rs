@@ -49,9 +49,11 @@ pub struct QemuRunner {
     vcpu_num: u32,
     ram_mb: u32,
     template: String,
+    data_disk: String,
     kernel: String,
     agent_sock_path: Option<String>,
     qmp_sock_path: Option<String>,
+    volatile: bool,
     network: bool,
     audio: bool,
     virgl: bool,
@@ -59,15 +61,17 @@ pub struct QemuRunner {
 }
 
 impl QemuRunner {
-    pub fn new(name: String) -> QemuRunner {
+    pub fn new(name: String, data_disk: String) -> QemuRunner {
         QemuRunner {
             name: name,
             vcpu_num: 1,
             ram_mb: 1024,
             template: "/usr/share/flatkvm/template.qcow2".to_string(),
+            data_disk: data_disk,
             kernel: "/usr/share/flatkvm/vmlinuz.flatkvm".to_string(),
             agent_sock_path: None,
             qmp_sock_path: None,
+            volatile: false,
             network: true,
             audio: true,
             virgl: false,
@@ -97,6 +101,11 @@ impl QemuRunner {
 
     pub fn qmp_sock_path(mut self, path: String) -> Self {
         self.qmp_sock_path = Some(path);
+        self
+    }
+
+    pub fn volatile(mut self, volatile: bool) -> Self {
+        self.volatile = volatile;
         self
     }
 
@@ -154,6 +163,10 @@ impl QemuRunner {
             cmdline.push_str(" gtk,gl=on")
         } else {
             cmdline.push_str(" gtk")
+        }
+        cmdline.push_str(&format!(" -drive if=virtio,file={}", self.data_disk));
+        if self.volatile {
+            cmdline.push_str(",snapshot=on")
         }
         if let Some(agent_sock_path) = &self.agent_sock_path {
             cmdline.push_str(&format!(" -device virtio-serial -chardev socket,path={},server,id=flatkvm-agent,nowait -device virtserialport,chardev=flatkvm-agent,name=org.flatkvm.port.0", agent_sock_path));
