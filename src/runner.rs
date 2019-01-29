@@ -26,6 +26,8 @@ pub enum QemuSharedDirType {
     FlatpakSystemDir,
     FlatpakUserDir,
     FlatpakAppDir,
+    FlatpakPublicDir,
+    FlatpakDownloadDir,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
