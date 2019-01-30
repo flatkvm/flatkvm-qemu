@@ -15,7 +15,7 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 use crate::clipboard::ClipboardEvent;
-use crate::dbus_notifications::DbusNotification;
+use crate::dbus_notifications::{DbusNotification, DbusNotificationClosed};
 use crate::runner::QemuSharedDir;
 use crate::util::open_socket;
 use serde_derive::{Deserialize, Serialize};
@@ -66,6 +66,7 @@ pub enum AgentMessage {
     AgentClosed,
     ClipboardEvent(ClipboardEvent),
     DbusNotification(DbusNotification),
+    DbusNotificationClosed(DbusNotificationClosed),
 }
 
 pub struct AgentHost {
@@ -137,6 +138,9 @@ impl AgentHost {
                 AgentMessage::AgentAppExitCode(msg) => Ok(AgentMessage::AgentAppExitCode(msg)),
                 AgentMessage::ClipboardEvent(msg) => Ok(AgentMessage::ClipboardEvent(msg)),
                 AgentMessage::DbusNotification(msg) => Ok(AgentMessage::DbusNotification(msg)),
+                AgentMessage::DbusNotificationClosed(msg) => {
+                    Ok(AgentMessage::DbusNotificationClosed(msg))
+                }
                 _ => Err("Protocol error".to_string()),
             }
         }
@@ -145,6 +149,13 @@ impl AgentHost {
     pub fn send_clipboard_event(&mut self, data: String) -> Result<(), String> {
         let cbe = AgentMessage::ClipboardEvent(ClipboardEvent { data });
         let mut msg = serde_json::to_string(&cbe).map_err(|err| err.to_string())?;
+        msg.push('\n');
+        self.send_message(&msg).map_err(|err| err.to_string())
+    }
+
+    pub fn send_dbus_notification_closed(&mut self, id: u32, reason: u32) -> Result<(), String> {
+        let dnc = AgentMessage::DbusNotificationClosed(DbusNotificationClosed { id, reason });
+        let mut msg = serde_json::to_string(&dnc).map_err(|err| err.to_string())?;
         msg.push('\n');
         self.send_message(&msg).map_err(|err| err.to_string())
     }

@@ -18,7 +18,14 @@ use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DbusNotification {
+    pub id: u32,
     pub summary: String,
     pub body: String,
     pub expire_timeout: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DbusNotificationClosed {
+    pub id: u32,
+    pub reason: u32,
 }
