@@ -49,6 +49,7 @@ pub struct AgentRunRequest {
     pub dbus_session: bool,
     pub public_share: bool,
     pub download: bool,
+    pub pulse_client: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -175,6 +176,7 @@ impl AgentHost {
         dbus_session: bool,
         public_share: bool,
         download: bool,
+        pulse_client: bool,
     ) -> Result<i32, String> {
         let rr = AgentMessage::AgentRunRequest(AgentRunRequest {
             app,
@@ -182,6 +184,7 @@ impl AgentHost {
             dbus_session,
             public_share,
             download,
+            pulse_client,
         });
         let mut msg = serde_json::to_string(&rr).map_err(|err| err.to_string())?;
         msg.push('\n');
