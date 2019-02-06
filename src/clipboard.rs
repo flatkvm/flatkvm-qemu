@@ -21,7 +21,9 @@ use std::sync::Arc;
 use std::thread;
 
 use serde_derive::{Deserialize, Serialize};
-use x11_clipboard::{Clipboard, Source};
+use x11_clipboard::error::Error;
+use x11_clipboard::xcb::Atom;
+use x11_clipboard::Clipboard;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClipboardEvent {
@@ -35,30 +37,41 @@ pub enum ClipboardMessage {
 
 pub struct ClipboardListener {
     clipboard: Clipboard,
+    selection: Atom,
     sender: Sender<ClipboardMessage>,
     used_flag: Arc<AtomicBool>,
 }
 
 impl ClipboardListener {
     pub fn new(sender: Sender<ClipboardMessage>, used_flag: Arc<AtomicBool>) -> ClipboardListener {
-        let clipboard = Clipboard::new(Source::Clipboard).unwrap();
+        let clipboard = Clipboard::new().unwrap();
+        let selection = clipboard.setter.atoms.clipboard;
 
         ClipboardListener {
             clipboard,
+            selection,
             sender,
             used_flag,
         }
+    }
+
+    pub fn set_selection(&mut self, name: &str) -> Result<(), Error> {
+        self.selection = self.clipboard.setter.get_atom(name)?;
+        Ok(())
+    }
+
+    pub fn get_selection(&self) -> Atom {
+        self.selection
     }
 
     pub fn spawn_thread(self) {
         thread::spawn(move || loop {
             let val = self
                 .clipboard
-                .load(
+                .load_wait(
+                    self.selection,
                     self.clipboard.setter.atoms.utf8_string,
                     self.clipboard.setter.atoms.property,
-                    true,
-                    None,
                 )
                 .unwrap();
 
