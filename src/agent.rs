@@ -53,6 +53,11 @@ pub struct AgentRunRequest {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct AgentLayoutRequest {
+    pub layout: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AgentAppExitCode {
     pub code: i32,
 }
@@ -63,6 +68,7 @@ pub enum AgentMessage {
     AgentAck(AgentAck),
     AgentMountRequest(AgentMountRequest),
     AgentRunRequest(AgentRunRequest),
+    AgentLayoutRequest(AgentLayoutRequest),
     AgentAppExitCode(AgentAppExitCode),
     AgentClosed,
     ClipboardEvent(ClipboardEvent),
@@ -164,6 +170,14 @@ impl AgentHost {
     pub fn request_mount(&mut self, shared_dir: QemuSharedDir) -> Result<i32, String> {
         let mr = AgentMessage::AgentMountRequest(AgentMountRequest { shared_dir });
         let mut msg = serde_json::to_string(&mr).map_err(|err| err.to_string())?;
+        msg.push('\n');
+        self.send_message(&msg).map_err(|err| err.to_string())?;
+        self.wait_ack()
+    }
+
+    pub fn request_layout(&mut self, layout: String) -> Result<i32, String> {
+        let lr = AgentMessage::AgentLayoutRequest(AgentLayoutRequest { layout });
+        let mut msg = serde_json::to_string(&lr).map_err(|err| err.to_string())?;
         msg.push('\n');
         self.send_message(&msg).map_err(|err| err.to_string())?;
         self.wait_ack()
